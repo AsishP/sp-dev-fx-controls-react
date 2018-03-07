@@ -304,10 +304,8 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
           compact={true}
           selectionMode={SelectionMode.multiple}
           selection={this._getSelection} />
-<<<<<<< HEAD
 
-          <p><a href="javascript:;" onClick={this.deleteItem}>Deletes second item</a></p>
-=======
+          <p><a href="javascript:;" onClick={this.deleteItem}>Deletes second item</a></p> 
           
           <SPPeoplePicker
           context={this.props.context}
@@ -319,7 +317,6 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
           isRequired = {true}
           selectedItems = {this._getPeoplePickerItems}
           />
->>>>>>> Fixing some final bugs with loading of People Picker results
       </div>
     );
   }
