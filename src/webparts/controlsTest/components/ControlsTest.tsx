@@ -15,6 +15,7 @@ import { TaxonomyPicker, IPickerTerms } from '../../../TaxonomyPicker';
 import { ListPicker } from '../../../ListPicker';
 import { IFrameDialog } from '../../../IFrameDialog';
 import { Environment, EnvironmentType } from '@microsoft/sp-core-library';
+import { SPPeoplePicker } from '../../../controls/peoplepicker';
 
 /**
  * Component that can be used to test out the React controls from this project
@@ -37,7 +38,8 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
    * React componentDidMount lifecycle hook
    */
   public componentDidMount() {
-    const restApi = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/GetFolderByServerRelativeUrl('Shared%20Documents')/files?$expand=ListItemAllFields`;
+    //const restApi = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/GetFolderByServerRelativeUrl('Shared%20Documents')/files?$expand=ListItemAllFields`;
+    const restApi = `${this.props.context.pageContext.web.absoluteUrl}/_api/web/lists(guid'40e24fbb-120a-4651-9dc2-34700a58297b')/items`;
     this.props.context.spHttpClient.get(restApi, SPHttpClient.configurations.v1)
       .then(resp => { return resp.json(); })
       .then(items => {
@@ -100,6 +102,12 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
       });
     }
   }
+  /* Method that retrieves the selected items from People  Picker
+   * @param items
+  */
+  private _getPeoplePickerItems(items: any[]) {
+    console.log('Items:', items);
+  }
 
   /**
    * Renders the component
@@ -124,22 +132,53 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
       }
     ];
 
+    // // Specify the fields that need to be viewed in the listview
+    // const viewFields: IViewField[] = [
+    //   {
+    //     name: 'ListItemAllFields.Id',
+    //     displayName: 'ID',
+    //     maxWidth: 40,
+    //     sorting: true
+    //   },
+    //   {
+    //     name: 'ListItemAllFields.Underscore_Field',
+    //     displayName: "Underscore_Field",
+    //     sorting: true
+    //   },
+    //   {
+    //     name: 'Name',
+    //     linkPropertyName: 'ServerRelativeUrl',
+    //     sorting: true
+    //   },
+    //   {
+    //     name: 'ServerRelativeUrl',
+    //     displayName: 'Path',
+    //     render: (item: any) => {
+    //       return <a href={item['ServerRelativeUrl']}>Link</a>;
+    //     }
+    //   },
+    //   {
+    //     name: 'Title'
+    //   }
+    // ];
+
     // Specify the fields that need to be viewed in the listview
     const viewFields: IViewField[] = [
       {
-        name: 'ListItemAllFields.Id',
+        name: 'Id',
         displayName: 'ID',
         maxWidth: 40,
         sorting: true
       },
       {
-        name: 'ListItemAllFields.Underscore_Field',
-        displayName: "Underscore_Field",
+        name: 'Students_x0020_Strength',
+        displayName: "Students Strength",
         sorting: true
       },
       {
-        name: 'Name',
-        linkPropertyName: 'ServerRelativeUrl',
+        name: 'Training_x0020_site.Description',
+        linkPropertyName: 'Training_x0020_site.Url',
+        displayName: 'Training Site',
         sorting: true
       },
       {
@@ -265,8 +304,22 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
           compact={true}
           selectionMode={SelectionMode.multiple}
           selection={this._getSelection} />
+<<<<<<< HEAD
 
           <p><a href="javascript:;" onClick={this.deleteItem}>Deletes second item</a></p>
+=======
+          
+          <SPPeoplePicker
+          context={this.props.context}
+          titleText="People Picker"
+          getAllUsers={false}
+          personSelectionLimit={3}
+          groupName = {"Team Site Owners"}
+          showtooltip = {true}
+          isRequired = {true}
+          selectedItems = {this._getPeoplePickerItems}
+          />
+>>>>>>> Fixing some final bugs with loading of People Picker results
       </div>
     );
   }
