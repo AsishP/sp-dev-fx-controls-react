@@ -7,13 +7,9 @@ import { WebPartContext } from '@microsoft/sp-webpart-base';
  */
 export interface IPeoplePickerProps {
   /**
-   * 
+   * Context of the component
    */
   context: WebPartContext;
-  /** 
-   * Unique ID of Group
-  */
-  groupID?: string;
   /**
    * Name of SharePoint Group
    */
@@ -30,6 +26,22 @@ export interface IPeoplePickerProps {
    * Selection Limit of Control
    */
   personSelectionLimit?: number;
+  /**
+   * Show or Hide Tooltip
+   */
+  showtooltip? : boolean;
+  /**
+   * People Field is mandatory
+   */
+  isRequired? : boolean;
+  /**
+   * Mandatory field error message
+   */
+  errorMessage? : string;
+  /**
+   * Method to check value of People Picker text
+   */
+  selectedItems?: (items: any[]) => void; 
 }
 
 export interface IPeoplePickerState {
@@ -51,4 +63,5 @@ export interface IPeoplePickerState {
   peoplePartTitle: string;
   peoplePartTooltip : string;
   isLoading : boolean;
+  peopleValidatorText? : string;
 }

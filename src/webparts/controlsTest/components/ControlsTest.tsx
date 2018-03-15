@@ -11,15 +11,11 @@ import { ListView, IViewField, SelectionMode, GroupOrder, IGrouping } from '../.
 import { SPHttpClient } from '@microsoft/sp-http';
 import { SiteBreadcrumb } from '../../../SiteBreadcrumb';
 import { WebPartTitle } from '../../../WebPartTitle';
-<<<<<<< HEAD
 import { TaxonomyPicker, IPickerTerms } from '../../../TaxonomyPicker';
 import { ListPicker } from '../../../ListPicker';
 import { IFrameDialog } from '../../../IFrameDialog';
 import { Environment, EnvironmentType } from '@microsoft/sp-core-library';
-import { SPPeoplePicker } from '../../../controls/peoplepicker';
-=======
 import { SPPeoplePicker } from '../../../PeoplePicker';
->>>>>>> Fixing some final bugs with loading of People Picker results
 
 /**
  * Component that can be used to test out the React controls from this project
@@ -105,6 +101,12 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
         items: items
       });
     }
+  } 
+  /** Method that retrieves the selected items from People  Picker
+   * @param items
+   */
+  private _getPeoplePickerItems(items: any[]) {
+    console.log('Items:', items);
   }
 
   /**
@@ -302,17 +304,19 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
           compact={true}
           selectionMode={SelectionMode.multiple}
           selection={this._getSelection} />
-<<<<<<< HEAD
 
           <p><a href="javascript:;" onClick={this.deleteItem}>Deletes second item</a></p>
-=======
           
           <SPPeoplePicker
           context={this.props.context}
           titleText="People Picker"
-          getAllUsers={true}
+          getAllUsers={false}
+          personSelectionLimit={1}
+          groupName = {"Team Site Owners"}
+          showtooltip = {true}
+          isRequired = {true}
+          selectedItems = {this._getPeoplePickerItems}
           />
->>>>>>> Fixing some final bugs with loading of People Picker results
       </div>
     );
   }

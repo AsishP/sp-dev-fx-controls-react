@@ -6,12 +6,14 @@ import { IBasePickerSuggestionsProps } from 'office-ui-fabric-react/lib/Pickers'
 import { NormalPeoplePicker } from 'office-ui-fabric-react/lib/components/pickers/PeoplePicker/PeoplePicker';
 import { IPersonaWithMenu } from 'office-ui-fabric-react/lib/components/pickers/PeoplePicker/PeoplePickerItems/PeoplePickerItem.Props';
 import { ValidationState } from 'office-ui-fabric-react/lib/Pickers';
+import { TextField } from 'office-ui-fabric-react/lib/TextField';
 import { SPHttpClient } from '@microsoft/sp-http';
 import styles from './PeoplePickerComponent.module.scss';
 import * as appInsights from '../../common/appInsights';
 import {
   assign
 } from 'office-ui-fabric-react/lib/Utilities';
+import { autobind } from 'office-ui-fabric-react';
 
 const suggestionProps: IBasePickerSuggestionsProps = {
   suggestionsHeaderText: 'Suggested People',
@@ -23,12 +25,24 @@ const suggestionProps: IBasePickerSuggestionsProps = {
 * PeoplePicker component
 */
 export class SPPeoplePicker extends React.Component<IPeoplePickerProps, IPeoplePickerState> {
+
+  public static defaultProps: Partial<IPeoplePickerProps> = {
+  getAllUsers: true,
+  titleText: "People Picker",
+  personSelectionLimit: 1,
+  showtooltip : false,
+  isRequired : false,
+  errorMessage : "People picker is mandatory"  
+  }; 
+
+  private peopleFieldErrorMessage : string = this.props.errorMessage;
+  
 /**
 * Constructor
 */
-
 constructor(props: IPeoplePickerProps) {
   super(props);
+  this.refs
   this.state = {
     selectedPersons: [],
     mostRecentlyUsedPersons: [],
@@ -46,11 +60,16 @@ constructor(props: IPeoplePickerProps) {
     currentPicker: 0,
     peoplePartTitle: "",
     peoplePartTooltip : "",
-    isLoading : false
+    isLoading : false,
+    peopleValidatorText : ""
+  };
+
+  if (typeof this.props.selectedItems !== 'undefined' && this.props.selectedItems !== null) {
+     this.props.selectedItems(this.state.selectedPersons);
   };
 
   appInsights.track('ReactPeoplePicker', {
-    groupID: !!props.groupID,
+    groupName: !!props.groupName,
     name: !!props.groupName,
     getAllUsers: !!props.getAllUsers,
     titleText: !!props.titleText
@@ -62,6 +81,10 @@ constructor(props: IPeoplePickerProps) {
   public componentWillMount(): void {
     this._thisLoadUsers();
   }
+
+  private generateUserPhotoLink(value : string) : string {
+    return `https://outlook.office365.com/owa/service.svc/s/GetPersonaPhoto?email=${value}&UA=0&size=HR96x96`
+  } 
 
   private _thisLoadUsers() : void {
     var stringVal = "";
@@ -87,13 +110,15 @@ constructor(props: IPeoplePickerProps) {
           tertiaryText: "", //status
           optionalText: "" //anything
         }];
+        
         for(let i = 0; i < items.value.length; i++)
         {
           if(i == 0)
           {
              userValuesArray = [{
                 id: items.value[i].Id,
-                imageUrl: `/_layouts/15/userphoto.aspx?size=S&accountname=${items.value[i].Email}`,
+                //imageUrl: `/_layouts/15/userphoto.aspx?size=S&accountname=${items.value[i].Email}`,
+                imageUrl: this.generateUserPhotoLink(items.value[i].Email), // `https://outlook.office365.com/owa/service.svc/s/GetPersonaPhoto?email=${items.value[i].Email}&UA=0&size=HR96x96`,
                 imageInitials: "",
                 primaryText: items.value[i].Title, //Name
                 secondaryText: items.value[i].Email, //Role
@@ -105,7 +130,7 @@ constructor(props: IPeoplePickerProps) {
           {
             userValuesArray.push({
               id: items.value[i].Id,
-              imageUrl: `/_layouts/15/userphoto.aspx?size=S&accountname=${items.value[i].Email}`,
+              imageUrl: this.generateUserPhotoLink(items.value[i].Email), //`https://outlook.office365.com/owa/service.svc/s/GetPersonaPhoto?email=${items.value[i].Email}&UA=0&size=HR96x96`,
               imageInitials: "",
               primaryText: items.value[i].Title, //Name
               secondaryText: items.value[i].Email, //Role
@@ -130,12 +155,15 @@ constructor(props: IPeoplePickerProps) {
       });
   }
 
+@autobind
 private _onPersonItemsChange(items: any[]) {
     this.setState({
-      selectedPersons: items
+      selectedPersons: items,
+      peopleValidatorText: items.length > 0 ? items.join(",") : ''
     });
   }
 
+@autobind
 private _validateInputPeople(input: string) {
   if (input.indexOf('@') !== -1) {
     return ValidationState.valid;
@@ -146,86 +174,115 @@ private _validateInputPeople(input: string) {
   }
 }
 
+@autobind
 private _returnMostRecentlyUsedPerson(currentPersonas: IPersonaProps[]): IPersonaProps[] | Promise<IPersonaProps[]> {
   let { mostRecentlyUsedPersons } = this.state;
   mostRecentlyUsedPersons = this._removeDuplicates(mostRecentlyUsedPersons, currentPersonas);
   return this._filterPromise(mostRecentlyUsedPersons);
 }
 
+@autobind
+private _onPersonFilterChanged(filterText: string, currentPersonas: IPersonaProps[], limitResults?: number) {
+  if (filterText) {
+    let filteredPersonas: IPersonaProps[] = this._filterPersons(filterText);
 
-  private _onPersonFilterChanged(filterText: string, currentPersonas: IPersonaProps[], limitResults?: number) {
-    if (filterText) {
-      let filteredPersonas: IPersonaProps[] = this._filterPersons(filterText);
+    filteredPersonas = this._removeDuplicates(filteredPersonas, currentPersonas);
+    filteredPersonas = limitResults ? filteredPersonas.splice(0, limitResults) : filteredPersonas;
+    return this._filterPromise(filteredPersonas);
+  } else {
+    return [];
+  }
+}
 
-      filteredPersonas = this._removeDuplicates(filteredPersonas, currentPersonas);
-      filteredPersonas = limitResults ? filteredPersonas.splice(0, limitResults) : filteredPersonas;
-      return this._filterPromise(filteredPersonas);
-    } else {
-      return [];
-    }
-  }
+@autobind
+private _filterPersons(filterText: string): IPersonaProps[] {
+  return this.state.peoplePersonaMenu.filter(item => this._doesTextStartWith(item.primaryText as string, filterText));
+}
 
-  private _filterPersons(filterText: string): IPersonaProps[] {
-    return this.state.peoplePersonaMenu.filter(item => this._doesTextStartWith(item.primaryText as string, filterText));
-  }
+@autobind
+private _removeDuplicates(personas: IPersonaProps[], possibleDupes: IPersonaProps[]) {
+  return personas.filter(persona => !this._listContainsPersona(persona, possibleDupes));
+}
 
-  private _removeDuplicates(personas: IPersonaProps[], possibleDupes: IPersonaProps[]) {
-    return personas.filter(persona => !this._listContainsPersona(persona, possibleDupes));
-  }
+@autobind
+private _doesTextStartWith(text: string, filterText: string): boolean {
+  return text.toLowerCase().indexOf(filterText.toLowerCase()) === 0;
+}
 
-  private _doesTextStartWith(text: string, filterText: string): boolean {
-    return text.toLowerCase().indexOf(filterText.toLowerCase()) === 0;
+@autobind
+private _listContainsPersona(persona: IPersonaProps, personas: IPersonaProps[]) {
+  if (!personas || !personas.length || personas.length === 0) {
+    return false;
   }
+  return personas.filter(item => item.primaryText === persona.primaryText).length > 0;
+}
 
-  private _listContainsPersona(persona: IPersonaProps, personas: IPersonaProps[]) {
-    if (!personas || !personas.length || personas.length === 0) {
-      return false;
-    }
-    return personas.filter(item => item.primaryText === persona.primaryText).length > 0;
+@autobind
+private _filterPromise(personasToReturn: IPersonaProps[]): IPersonaProps[] | Promise<IPersonaProps[]> {
+  if (this.state.delayResults) {
+    return this._convertResultsToPromise(personasToReturn);
+  } else {
+    return personasToReturn;
   }
+}
 
-  private _filterPromise(personasToReturn: IPersonaProps[]): IPersonaProps[] | Promise<IPersonaProps[]> {
-    if (this.state.delayResults) {
-      return this._convertResultsToPromise(personasToReturn);
-    } else {
-      return personasToReturn;
-    }
-  }
-  private _convertResultsToPromise(results: IPersonaProps[]): Promise<IPersonaProps[]> {
-    return new Promise<IPersonaProps[]>((resolve, reject) => setTimeout(() => resolve(results), 2000));
-  }
+@autobind
+private _convertResultsToPromise(results: IPersonaProps[]): Promise<IPersonaProps[]> {
+  return new Promise<IPersonaProps[]>((resolve, reject) => setTimeout(() => resolve(results), 2000));
+}
+
+private _getTextErrorMessageMandatory(value: string) : string {
+  return value.length != 0
+  ? ''
+  : this.peopleFieldErrorMessage;
+}
  //#endregion User control function and bindings
 
-  /**
-   * Default React component render method
-   */
-  public render(): React.ReactElement<IPeoplePickerProps> {
-
-    return (
-      <div>
-      <TooltipHost content={this.state.peoplePartTooltip} id='pntp' calloutProps={ { gapSpace: 0 } } directionalHint={DirectionalHint.leftCenter}>
-      <div id="pageowner">{this.props.titleText}
-      <NormalPeoplePicker
-          pickerSuggestionsProps= {suggestionProps}
-          onResolveSuggestions={ this._onPersonFilterChanged }
-          onEmptyInputFocus={ this._returnMostRecentlyUsedPerson }
-          getTextFromItem={(peoplePersonaMenu: IPersonaProps) => peoplePersonaMenu.primaryText} 
-          className={ 'ms-PeoplePicker' }
-          key={ 'normal' }
-          onValidateInput={ this._validateInputPeople }
-          removeButtonAriaLabel={ 'Remove' }
-          inputProps={ {
-            'aria-label': 'People Picker',
-            onBlur: (ev: React.FocusEvent<HTMLInputElement>) => console.log('onBlur called'),
-            onFocus: (ev: React.FocusEvent<HTMLInputElement>) => console.log('onFocus called'),
-          } }
-          itemLimit={this.props.personSelectionLimit}
-          onChange = { this._onPersonItemsChange }
-        />
-      </div>
-      </TooltipHost>
-      </div>
-    );
+/**
+ * Default React component render method
+ */
+public render(): React.ReactElement<IPeoplePickerProps> {
+  const peoplepicker = <div id="people">{this.props.titleText}
+                      <NormalPeoplePicker
+                          pickerSuggestionsProps= {suggestionProps}
+                          onResolveSuggestions={ this._onPersonFilterChanged }
+                          onEmptyInputFocus={ this._returnMostRecentlyUsedPerson }
+                          getTextFromItem={(peoplePersonaMenu: IPersonaProps) => peoplePersonaMenu.primaryText} 
+                          className={ 'ms-PeoplePicker' }
+                          key={ 'normal' }
+                          onValidateInput={ this._validateInputPeople }
+                          removeButtonAriaLabel={ 'Remove' }
+                          inputProps={ {
+                            'aria-label': 'People Picker',
+                            onBlur: (ev: React.FocusEvent<HTMLInputElement>) => console.log('onBlur on People Picker called'),
+                            onFocus: (ev: React.FocusEvent<HTMLInputElement>) => console.log('onFocus on People Picker called'),
+                          } }
+                          itemLimit={this.props.personSelectionLimit}
+                          onChange = { this._onPersonItemsChange }
+                        />
+                      </div>;
+  return (
+    <div>
+    {this.props.showtooltip ?
+    <TooltipHost content={this.state.peoplePartTooltip} id='pntp' calloutProps={ { gapSpace: 0 } } directionalHint={DirectionalHint.leftCenter}>
+      {peoplepicker}
+    </TooltipHost> : 
+    <div id="people">{this.props.titleText}
+      {peoplepicker}
+    </div>}
+    {this.props.isRequired ?
+      <TextField
+      id='txtPeopleValidator'
+      label=''
+      onGetErrorMessage = { this._getTextErrorMessageMandatory }
+      borderless
+      readOnly
+      hidden
+      value = {this.state.peopleValidatorText}
+     /> : null
+    }
+    </div>
+  );
   }
 }
 
