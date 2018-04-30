@@ -15,7 +15,7 @@ import { TaxonomyPicker, IPickerTerms } from '../../../TaxonomyPicker';
 import { ListPicker } from '../../../ListPicker';
 import { IFrameDialog } from '../../../IFrameDialog';
 import { Environment, EnvironmentType } from '@microsoft/sp-core-library';
-import { SPPeoplePicker } from '../../../PeoplePicker';
+import { PeoplePicker } from '../../../PeoplePicker';
 
 /**
  * Component that can be used to test out the React controls from this project
@@ -307,11 +307,11 @@ export default class ControlsTest extends React.Component<IControlsTestProps, IC
 
           <p><a href="javascript:;" onClick={this.deleteItem}>Deletes second item</a></p>
           
-          <SPPeoplePicker
+          <PeoplePicker
           context={this.props.context}
           titleText="People Picker"
           getAllUsers={false}
-          personSelectionLimit={1}
+          personSelectionLimit={3}
           groupName = {"Team Site Owners"}
           showtooltip = {true}
           isRequired = {true}

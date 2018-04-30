@@ -7,6 +7,7 @@ import { NormalPeoplePicker } from 'office-ui-fabric-react/lib/components/picker
 import { IPersonaWithMenu } from 'office-ui-fabric-react/lib/components/pickers/PeoplePicker/PeoplePickerItems/PeoplePickerItem.Props';
 import { ValidationState } from 'office-ui-fabric-react/lib/Pickers';
 import { TextField } from 'office-ui-fabric-react/lib/TextField';
+import { MessageBar, MessageBarType } from 'office-ui-fabric-react/lib/MessageBar';
 import { SPHttpClient } from '@microsoft/sp-http';
 import styles from './PeoplePickerComponent.module.scss';
 import * as appInsights from '../../common/appInsights';
@@ -24,25 +25,26 @@ const suggestionProps: IBasePickerSuggestionsProps = {
 /**
 * PeoplePicker component
 */
-export class SPPeoplePicker extends React.Component<IPeoplePickerProps, IPeoplePickerState> {
+export class PeoplePicker extends React.Component<IPeoplePickerProps, IPeoplePickerState> {
 
-  public static defaultProps: Partial<IPeoplePickerProps> = {
+  public static defaultProps: IPeoplePickerProps = {
+  context : null,
   getAllUsers: true,
   titleText: "People Picker",
   personSelectionLimit: 1,
   showtooltip : false,
   isRequired : false,
-  errorMessage : "People picker is mandatory"  
+  errorMessage : "People picker is mandatory",
+  groupName: "",
+  tooltipMessage: "This is a People Picker",
+  tooltipDirectional: DirectionalHint.leftTopEdge  
   }; 
-
-  private peopleFieldErrorMessage : string = this.props.errorMessage;
   
 /**
 * Constructor
 */
 constructor(props: IPeoplePickerProps) {
   super(props);
-  this.refs
   this.state = {
     selectedPersons: [],
     mostRecentlyUsedPersons: [],
@@ -61,7 +63,7 @@ constructor(props: IPeoplePickerProps) {
     peoplePartTitle: "",
     peoplePartTooltip : "",
     isLoading : false,
-    peopleValidatorText : ""
+    showmessageerror: false
   };
 
   if (typeof this.props.selectedItems !== 'undefined' && this.props.selectedItems !== null) {
@@ -150,7 +152,8 @@ constructor(props: IPeoplePickerProps) {
         this.setState({
           allPersons : userValuesArray,
           peoplePersonaMenu : personaList,
-          mostRecentlyUsedPersons : personaList.slice(0,5)
+          mostRecentlyUsedPersons : personaList.slice(0,5),
+          showmessageerror: this.props.isRequired && this.state.selectedPersons.length === 0
         });
       });
   }
@@ -159,7 +162,7 @@ constructor(props: IPeoplePickerProps) {
 private _onPersonItemsChange(items: any[]) {
     this.setState({
       selectedPersons: items,
-      peopleValidatorText: items.length > 0 ? items.join(",") : ''
+      showmessageerror: items.length > 0 ? false : true
     });
   }
 
@@ -231,11 +234,6 @@ private _convertResultsToPromise(results: IPersonaProps[]): Promise<IPersonaProp
   return new Promise<IPersonaProps[]>((resolve, reject) => setTimeout(() => resolve(results), 2000));
 }
 
-private _getTextErrorMessageMandatory(value: string) : string {
-  return value.length != 0
-  ? ''
-  : this.peopleFieldErrorMessage;
-}
  //#endregion User control function and bindings
 
 /**
@@ -264,22 +262,20 @@ public render(): React.ReactElement<IPeoplePickerProps> {
   return (
     <div>
     {this.props.showtooltip ?
-    <TooltipHost content={this.state.peoplePartTooltip} id='pntp' calloutProps={ { gapSpace: 0 } } directionalHint={DirectionalHint.leftCenter}>
+    <TooltipHost content={this.props.tooltipMessage} id='pntp' calloutProps={ { gapSpace: 0 } } directionalHint={this.props.tooltipDirectional}>
       {peoplepicker}
-    </TooltipHost> : 
-    <div id="people">{this.props.titleText}
+    </TooltipHost> :
+     <div> 
       {peoplepicker}
-    </div>}
-    {this.props.isRequired ?
-      <TextField
-      id='txtPeopleValidator'
-      label=''
-      onGetErrorMessage = { this._getTextErrorMessageMandatory }
-      borderless
-      readOnly
-      hidden
-      value = {this.state.peopleValidatorText}
-     /> : null
+     </div>
+    }
+    {(this.props.isRequired && this.state.showmessageerror) ?
+    <MessageBar
+    messageBarType={ MessageBarType.error }
+    isMultiline={ false }
+    >
+    {this.props.errorMessage}
+    </MessageBar> : null
     }
     </div>
   );

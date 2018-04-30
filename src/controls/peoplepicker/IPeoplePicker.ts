@@ -1,4 +1,4 @@
-import { IPersonaProps } from "office-ui-fabric-react";
+import { IPersonaProps, DirectionalHint } from "office-ui-fabric-react";
 import { WebPartContext } from '@microsoft/sp-webpart-base';
 
 /**
@@ -42,6 +42,14 @@ export interface IPeoplePickerProps {
    * Method to check value of People Picker text
    */
   selectedItems?: (items: any[]) => void; 
+  /**
+   * Tooltip Message
+   */
+  tooltipMessage? : string;
+  /**
+   * Directional Hint of tool tip
+   */
+  tooltipDirectional? : DirectionalHint;
 }
 
 export interface IPeoplePickerState {
@@ -64,4 +72,5 @@ export interface IPeoplePickerState {
   peoplePartTooltip : string;
   isLoading : boolean;
   peopleValidatorText? : string;
+  showmessageerror: boolean;
 }
